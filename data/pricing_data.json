@@ -1,0 +1,126 @@
+{
+  "cloud_providers": {
+    "AWS": {
+      "gpus": {
+        "p3.2xlarge": {
+          "name": "P3.2xlarge",
+          "gpu_type": "V100",
+          "gpu_count": 1,
+          "vcpus": 8,
+          "memory_gb": 61,
+          "price_per_hour": 3.06,
+          "region": "us-east-1"
+        },
+        "p3.8xlarge": {
+          "name": "P3.8xlarge",
+          "gpu_type": "V100",
+          "gpu_count": 4,
+          "vcpus": 32,
+          "memory_gb": 244,
+          "price_per_hour": 12.24,
+          "region": "us-east-1"
+        },
+        "p3.16xlarge": {
+          "name": "P3.16xlarge",
+          "gpu_type": "V100",
+          "gpu_count": 8,
+          "vcpus": 64,
+          "memory_gb": 488,
+          "price_per_hour": 24.48,
+          "region": "us-east-1"
+        },
+        "p4d.24xlarge": {
+          "name": "P4d.24xlarge",
+          "gpu_type": "A100",
+          "gpu_count": 8,
+          "vcpus": 96,
+          "memory_gb": 1152,
+          "price_per_hour": 32.77,
+          "region": "us-east-1"
+        }
+      }
+    },
+    "Azure": {
+      "gpus": {
+        "NC6": {
+          "name": "NC6",
+          "gpu_type": "K80",
+          "gpu_count": 1,
+          "vcpus": 6,
+          "memory_gb": 56,
+          "price_per_hour": 0.90,
+          "region": "East US"
+        },
+        "NC12": {
+          "name": "NC12",
+          "gpu_type": "K80",
+          "gpu_count": 2,
+          "vcpus": 12,
+          "memory_gb": 112,
+          "price_per_hour": 1.80,
+          "region": "East US"
+        },
+        "NC24": {
+          "name": "NC24",
+          "gpu_type": "K80",
+          "gpu_count": 4,
+          "vcpus": 24,
+          "memory_gb": 224,
+          "price_per_hour": 3.60,
+          "region": "East US"
+        },
+        "NC6s_v3": {
+          "name": "NC6s v3",
+          "gpu_type": "V100",
+          "gpu_count": 1,
+          "vcpus": 6,
+          "memory_gb": 112,
+          "price_per_hour": 3.06,
+          "region": "East US"
+        }
+      }
+    },
+    "GCP": {
+      "gpus": {
+        "n1-standard-8": {
+          "name": "n1-standard-8 with Tesla K80",
+          "gpu_type": "K80",
+          "gpu_count": 1,
+          "vcpus": 8,
+          "memory_gb": 30,
+          "price_per_hour": 0.70,
+          "region": "us-central1"
+        },
+        "n1-standard-16": {
+          "name": "n1-standard-16 with Tesla K80",
+          "gpu_type": "K80",
+          "gpu_count": 2,
+          "vcpus": 16,
+          "memory_gb": 60,
+          "price_per_hour": 1.40,
+          "region": "us-central1"
+        },
+        "n1-standard-32": {
+          "name": "n1-standard-32 with Tesla K80",
+          "gpu_type": "K80",
+          "gpu_count": 4,
+          "vcpus": 32,
+          "memory_gb": 120,
+          "price_per_hour": 2.80,
+          "region": "us-central1"
+        },
+        "a2-highgpu-1g": {
+          "name": "A2 HighGPU 1G",
+          "gpu_type": "A100",
+          "gpu_count": 1,
+          "vcpus": 12,
+          "memory_gb": 85,
+          "price_per_hour": 2.93,
+          "region": "us-central1"
+        }
+      }
+    }
+  },
+  "last_updated": "2025-01-17",
+  "disclaimer": "Prices are simulated for demonstration purposes and may not reflect current market rates."
+}
