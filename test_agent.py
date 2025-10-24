@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Script de teste rápido para o AI Cloud Pricing Agent.
-Use este script para verificar se tudo está funcionando corretamente.
+Script de teste direto para o AI Cloud Pricing Agent.
+Testa o agente diretamente sem precisar da API FastAPI.
+Use este script para verificar se o agente está funcionando.
 """
 import os
 import sys
@@ -10,95 +11,100 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from utils import Config, setup_logging
-from agents import CloudPricingAgent
-from tools import MockExternalAPIServer
+from utils.config import Config
+from utils.logging_config import setup_logging
+from agents.cloud_pricing_agent import CloudPricingAgent
 import time
 
 def test_basic_functionality():
     """Test basic agent functionality."""
-    print("🧪 Testing AI Cloud Pricing Agent...")
+    print("Testing AI Cloud Pricing Agent...")
 
     # Check configuration
-    if not Config.validate_config():
-        print("❌ Configuration validation failed")
+    if not Config.validar():
+        print("[ERRO] Configuracao invalida")
         return False
 
     # Setup logging
     setup_logging()
-    print("✅ Logging configured")
+    print("[OK] Logging configurado")
 
     # Test agent initialization
     try:
-        agent = CloudPricingAgent(
-            model_name="gpt-4",  # Will fallback if not available
-            chroma_db_path="./data/chromadb",
-            external_api_url="http://localhost:8001",
-            external_api_key="demo_key"
-        )
-        print("✅ Agent initialized successfully")
+        agent = CloudPricingAgent()
+        print("[OK] Agente inicializado com sucesso")
     except Exception as e:
-        print(f"❌ Agent initialization failed: {e}")
+        print(f"[ERRO] Agente falhou ao inicializar: {e}")
         return False
 
     # Test basic query
     test_queries = [
-        "What GPU instances are available on AWS?",
-        "Compare prices between AWS and Azure for V100 GPUs",
-        "What are some cost optimization strategies for cloud GPUs?"
+        "Quais instâncias de GPU estão disponíveis na AWS?",
+        "Compare preços entre AWS e Azure para GPUs V100",
+        "Quais são algumas estratégias de otimização de custos para GPUs na nuvem?"
     ]
 
     for query in test_queries:
-        print(f"\n🔍 Testing query: '{query}'")
+        print(f"\nTestando pergunta: '{query}'")
         try:
             start_time = time.time()
             response = agent.analyze_query(query)
             end_time = time.time()
 
-            print(f"⏱️  Response time: {end_time - start_time:.2f}s")
-            print(f"📄 Response preview: {response[:200]}...")
+            print(f"Tempo de resposta: {end_time - start_time:.2f}s")
+            print(f"Resposta: {response[:300]}...")
 
         except Exception as e:
-            print(f"❌ Query failed: {e}")
+            print(f"[ERRO] Query falhou: {e}")
             continue
 
-    print("\n✅ Basic functionality test completed!")
+    print("\n[OK] Teste basico concluido!")
     return True
 
 def test_tools():
     """Test individual tools."""
-    print("\n🛠️  Testing individual tools...")
+    print("\nTestando ferramentas individuais...")
 
-    from tools import MockSearchTool, VectorStoreTool, ExternalAPITool
+    from tools.search_tool import MockSearchTool
+    from tools.vector_store import VectorStoreTool
+    from tools.external_api import ExternalAPITool
 
     # Test search tool
     try:
         search_tool = MockSearchTool()
-        results = search_tool.search_gpu_pricing()
-        print(f"✅ Search tool: Found {len(results)} GPU instances")
+        results_str = search_tool.search_gpu_pricing("AWS")  # Retorna string JSON
+        # Verifica se a string não está vazia e é válida
+        if results_str and len(results_str) > 10:  # Mais que apenas "{}" ou "[]"
+            print(f"[OK] Ferramenta de busca: Resposta obtida ({len(results_str)} chars)")
+        else:
+            print(f"[ERRO] Ferramenta de busca: Resposta vazia")
     except Exception as e:
-        print(f"❌ Search tool failed: {e}")
+        print(f"[ERRO] Ferramenta de busca falhou: {e}")
 
     # Test vector store
     try:
         vector_store = VectorStoreTool()
-        stats = vector_store.get_collection_stats()
-        print(f"✅ Vector store: {stats['document_count']} documents loaded")
+        # Testar busca no conhecimento - metodo correto
+        results_str = vector_store.search_similar("GPU pricing")
+        if results_str and len(results_str) > 10:
+            print(f"[OK] Vector store: Resposta obtida ({len(results_str)} chars)")
+        else:
+            print(f"[ERRO] Vector store: Resposta vazia")
     except Exception as e:
-        print(f"❌ Vector store failed: {e}")
+        print(f"[ERRO] Vector store falhou: {e}")
 
-    # Test external API (will fail if server not running, which is expected)
+    # Test external API
     try:
         external_api = ExternalAPITool()
-        # This will likely fail without the mock server running
-        result = external_api.get_providers()
-        print(f"✅ External API: {result}")
+        # Testar comparacao de precos - metodo correto
+        result = external_api.get_market_trends()
+        print(f"[OK] API externa: Dados obtidos")
     except Exception as e:
-        print(f"⚠️  External API (expected to fail without server): {type(e).__name__}")
+        print(f"[ERRO] API externa falhou: {e}")
 
 def main():
     """Main test function."""
-    print("🚀 AI Cloud Pricing Agent - Test Suite")
+    print("AI Cloud Pricing Agent - Suite de Testes")
     print("=" * 50)
 
     # Test basic functionality
@@ -109,13 +115,12 @@ def main():
 
     print("\n" + "=" * 50)
     if success:
-        print("🎉 All tests passed! The agent is ready to use.")
-        print("\nTo start the interactive mode:")
-        print("  python -m src.main interactive")
-        print("\nTo start the mock API server (in another terminal):")
-        print("  python -m src.main api-server")
+        print("Sucesso! O agente esta funcionando.")
+        print("\nPara usar a API FastAPI:")
+        print("  docker-compose up")
+        print("  curl -X POST http://localhost:8000/ask -H 'Content-Type: application/json' -d '{\"question\":\"Quanto custa GPU V100?\"}'")
     else:
-        print("❌ Some tests failed. Please check the errors above.")
+        print("Alguns testes falharam. Verifique os erros acima.")
         sys.exit(1)
 
 if __name__ == "__main__":

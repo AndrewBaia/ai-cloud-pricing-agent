@@ -1,228 +1,170 @@
 """
-Vector store tool using ChromaDB for storing and retrieving cloud pricing information.
+Ferramenta de Base de Conhecimento Vetorial (VectorStoreTool)
+
+Esta ferramenta representa a segunda ferramenta do agente: uma "base de conhecimento inteligente".
+Usa ChromaDB para armazenar e buscar informações usando similaridade vetorial.
+
+Responsabilidades:
+- Armazenar documentos de conhecimento sobre nuvem e otimização
+- Realizar buscas semânticas (não apenas texto exato)
+- Fornecer dicas de otimização de custos
+- Manter histórico de informações relevantes
 """
 import chromadb
 from chromadb.config import Settings
 import json
-from typing import List, Dict, Any, Optional
-from loguru import logger
 import uuid
+from loguru import logger
 
 
 class VectorStoreTool:
-    """ChromaDB-based vector store for cloud pricing and documentation."""
+    """
+    Base de conhecimento vetorial usando ChromaDB.
+
+    Esta classe representa uma "memória inteligente" do agente.
+    Em produção, seria populada com documentação real de provedores de nuvem,
+    melhores práticas, e conhecimento específico do domínio.
+
+    Atributos:
+        persist_directory: Diretório onde ChromaDB salva dados
+        client: Cliente ChromaDB para operações
+        collection_name: Nome da coleção de documentos
+        collection: Objeto da coleção ChromaDB
+    """
 
     def __init__(self, persist_directory: str = "./data/chromadb"):
+        """
+        Inicializa a base de conhecimento vetorial.
+
+        Args:
+            persist_directory: Caminho onde dados serão persistidos
+        """
         self.persist_directory = persist_directory
+
+        # Cria cliente ChromaDB com persistência local
+        # Desabilita telemetria para privacidade
         self.client = chromadb.PersistentClient(
             path=persist_directory,
             settings=Settings(anonymized_telemetry=False)
         )
+
+        # Nome da coleção que armazenará nossos documentos
         self.collection_name = "cloud_pricing_docs"
+
+        # Inicializa ou carrega coleção existente
         self._initialize_collection()
 
     def _initialize_collection(self):
-        """Initialize the ChromaDB collection with pricing data."""
+        """
+        Inicializa ou carrega a coleção ChromaDB.
+
+        Este método verifica se já existe uma coleção com dados.
+        Se não existir, cria uma nova e popula com dados iniciais.
+
+        Processo:
+        1. Tenta carregar coleção existente
+        2. Se não existir, cria nova coleção
+        3. Popula com documentos de conhecimento básico
+        """
         try:
+            # Tenta carregar coleção existente
             self.collection = self.client.get_collection(self.collection_name)
-            logger.info(f"Loaded existing collection: {self.collection_name}")
-        except Exception:
-            # Collection doesn't exist, create it
+            logger.info("Coleção existente de conhecimento carregada")
+        except:
+            # Coleção não existe, criar nova
             self.collection = self.client.create_collection(self.collection_name)
+            # Popula com dados iniciais de conhecimento
             self._populate_initial_data()
-            logger.info(f"Created new collection: {self.collection_name}")
+            logger.info("Nova coleção de conhecimento criada")
 
     def _populate_initial_data(self):
-        """Populate the collection with initial cloud pricing documentation."""
+        """
+        Popula a coleção com documentos iniciais de conhecimento.
+
+        Estes documentos representam o "conhecimento base" do agente sobre:
+        - Preços de diferentes provedores
+        - Estratégias de otimização
+        - Informações técnicas relevantes
+
+        Em produção, isso seria feito com dados reais de documentação,
+        blogs técnicos, e melhores práticas dos provedores.
+        """
         documents = [
             {
                 "id": str(uuid.uuid4()),
-                "content": "AWS P3 instances are optimized for machine learning and high-performance computing workloads. They feature NVIDIA Tesla V100 GPUs with 16GB or 32GB of GPU memory.",
-                "metadata": {
-                    "provider": "AWS",
-                    "instance_family": "P3",
-                    "gpu_type": "V100",
-                    "use_case": "machine_learning"
-                }
+                "content": "AWS P3 instances com V100 GPUs para machine learning. Preços: P3.2xlarge $3.06/h, P3.8xlarge $12.24/h.",
+                "metadata": {"provider": "AWS", "gpu_type": "V100"}
             },
             {
                 "id": str(uuid.uuid4()),
-                "content": "Azure NC series VMs are designed for compute-intensive and graphics-intensive applications. They feature NVIDIA Tesla K80 GPUs.",
-                "metadata": {
-                    "provider": "Azure",
-                    "instance_family": "NC",
-                    "gpu_type": "K80",
-                    "use_case": "graphics_compute"
-                }
+                "content": "Azure NC series com K80 GPUs. Preços: NC6 $0.90/h, NC12 $1.80/h, NC24 $3.60/h.",
+                "metadata": {"provider": "Azure", "gpu_type": "K80"}
             },
             {
                 "id": str(uuid.uuid4()),
-                "content": "Google Cloud Platform offers GPU instances with various NVIDIA GPU types. They provide flexible pricing models including on-demand and preemptible instances.",
-                "metadata": {
-                    "provider": "GCP",
-                    "gpu_types": "K80, P100, V100, A100",
-                    "pricing_models": "on-demand, preemptible",
-                    "use_case": "flexible_compute"
-                }
+                "content": "GCP com K80 GPUs. Preços: n1-standard-8 $0.70/h, n1-standard-16 $1.40/h.",
+                "metadata": {"provider": "GCP", "gpu_type": "K80"}
             },
             {
                 "id": str(uuid.uuid4()),
-                "content": "Cost optimization strategies for GPU instances: 1) Use spot/preemptible instances for non-critical workloads, 2) Choose the right instance size based on your workload requirements, 3) Consider reserved instances for long-term usage.",
-                "metadata": {
-                    "topic": "cost_optimization",
-                    "strategies": "spot_instances, right_sizing, reserved_instances",
-                    "applicable_providers": "AWS, Azure, GCP"
-                }
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "content": "AWS pricing: P3.2xlarge costs $3.06/hour, P3.8xlarge costs $12.24/hour, P3.16xlarge costs $24.48/hour in us-east-1 region.",
-                "metadata": {
-                    "provider": "AWS",
-                    "region": "us-east-1",
-                    "instances": "p3.2xlarge, p3.8xlarge, p3.16xlarge",
-                    "prices": "3.06, 12.24, 24.48"
-                }
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "content": "Azure pricing: NC6 costs $0.90/hour, NC12 costs $1.80/hour, NC24 costs $3.60/hour in East US region.",
-                "metadata": {
-                    "provider": "Azure",
-                    "region": "East US",
-                    "instances": "NC6, NC12, NC24",
-                    "prices": "0.90, 1.80, 3.60"
-                }
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "content": "GCP pricing: n1-standard-8 with K80 GPU costs $0.70/hour, n1-standard-16 costs $1.40/hour, n1-standard-32 costs $2.80/hour in us-central1.",
-                "metadata": {
-                    "provider": "GCP",
-                    "region": "us-central1",
-                    "instances": "n1-standard-8, n1-standard-16, n1-standard-32",
-                    "prices": "0.70, 1.40, 2.80"
-                }
+                "content": "Dicas de economia: Use spot instances, escolha tamanho correto, considere reserved instances.",
+                "metadata": {"topic": "cost_optimization"}
             }
         ]
 
-        # Add documents to collection
+        # Extrai dados para o formato esperado pelo ChromaDB
         ids = [doc["id"] for doc in documents]
         contents = [doc["content"] for doc in documents]
         metadatas = [doc["metadata"] for doc in documents]
 
-        self.collection.add(
-            documents=contents,
-            metadatas=metadatas,
-            ids=ids
-        )
+        # Adiciona documentos à coleção
+        # ChromaDB criará embeddings automaticamente
+        self.collection.add(documents=contents, metadatas=metadatas, ids=ids)
+        logger.info(f"Base de conhecimento populada com {len(documents)} documentos")
 
-        logger.info(f"Populated collection with {len(documents)} initial documents")
-
-    def search_similar(self, query: str, n_results: int = 5,
-                      where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def search_similar(self, query: str) -> str:
         """
-        Search for similar documents in the vector store.
+        Método principal: realiza busca semântica na base de conhecimento.
+
+        Esta é a função que o agente IA chama quando precisa de conhecimento
+        geral sobre nuvem, melhores práticas, ou dicas de otimização.
+
+        Como funciona a busca vetorial:
+        1. A query é convertida em embedding vetorial
+        2. Busca documentos similares no espaço vetorial
+        3. Retorna os mais relevantes (não apenas matches exatos)
 
         Args:
-            query: Search query string
-            n_results: Number of results to return
-            where: Metadata filters
+            query: Pergunta ou termo de busca (ex: "otimização de custos")
 
         Returns:
-            Search results with documents, metadata, and distances
+            str: JSON com documentos relevantes encontrados
         """
-        logger.info(f"Vector search - Query: '{query}', Results: {n_results}, Filters: {where}")
+        logger.info(f"Busca semântica por: '{query}'")
 
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=n_results,
-            where=where
-        )
+        # Realiza busca vetorial - retorna 2 resultados mais similares
+        results = self.collection.query(query_texts=[query], n_results=2)
 
-        logger.info(f"Found {len(results['documents'][0]) if results['documents'] else 0} similar documents")
+        # Verifica se encontrou documentos
+        if not results.get("documents") or not results["documents"][0]:
+            logger.info(f"Nenhum documento relevante encontrado para: {query}")
+            return json.dumps({
+                "mensagem": f"Nenhum documento relevante encontrado para: {query}",
+                "query": query
+            })
 
-        return {
-            "query": query,
-            "results": results
-        }
+        # Formatar resposta para o agente
+        docs = results["documents"][0]      # Lista de conteúdos
+        metadatas = results["metadatas"][0] # Lista de metadados
 
-    def add_document(self, content: str, metadata: Dict[str, Any]) -> str:
-        """
-        Add a new document to the vector store.
+        # Combina conteúdo + metadados em formato estruturado
+        formatted_results = []
+        for doc, meta in zip(docs, metadatas):
+            formatted_results.append({
+                "conteudo": doc,    # Texto completo do documento
+                "metadata": meta    # Informações contextuais
+            })
 
-        Args:
-            content: Document content
-            metadata: Document metadata
-
-        Returns:
-            Document ID
-        """
-        doc_id = str(uuid.uuid4())
-
-        self.collection.add(
-            documents=[content],
-            metadatas=[metadata],
-            ids=[doc_id]
-        )
-
-        logger.info(f"Added document with ID: {doc_id}")
-        return doc_id
-
-    def get_document_by_id(self, doc_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve a document by its ID.
-
-        Args:
-            doc_id: Document ID
-
-        Returns:
-            Document data or None if not found
-        """
-        try:
-            result = self.collection.get(ids=[doc_id])
-            if result["documents"]:
-                return {
-                    "id": doc_id,
-                    "content": result["documents"][0],
-                    "metadata": result["metadatas"][0]
-                }
-        except Exception as e:
-            logger.error(f"Error retrieving document {doc_id}: {e}")
-
-        return None
-
-    def update_document(self, doc_id: str, content: str, metadata: Dict[str, Any]):
-        """
-        Update an existing document.
-
-        Args:
-            doc_id: Document ID
-            content: New content
-            metadata: New metadata
-        """
-        self.collection.update(
-            ids=[doc_id],
-            documents=[content],
-            metadatas=[metadata]
-        )
-        logger.info(f"Updated document: {doc_id}")
-
-    def delete_document(self, doc_id: str):
-        """
-        Delete a document from the vector store.
-
-        Args:
-            doc_id: Document ID to delete
-        """
-        self.collection.delete(ids=[doc_id])
-        logger.info(f"Deleted document: {doc_id}")
-
-    def get_collection_stats(self) -> Dict[str, Any]:
-        """Get statistics about the collection."""
-        count = self.collection.count()
-        return {
-            "collection_name": self.collection_name,
-            "document_count": count,
-            "persist_directory": self.persist_directory
-        }
+        logger.info(f"Encontrados {len(formatted_results)} documentos relevantes")
+        # Retorna JSON formatado para o agente
+        return json.dumps(formatted_results, ensure_ascii=False, indent=2)

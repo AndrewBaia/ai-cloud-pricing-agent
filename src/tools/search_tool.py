@@ -1,207 +1,112 @@
 """
-Simulated search tool that returns mock data for cloud pricing information.
+Ferramenta de Busca Simulada (MockSearchTool)
+
+Esta ferramenta simula uma busca em dados de preços de nuvem.
+Ela representa a primeira ferramenta do agente: uma "busca local" em dados JSON.
+
+Responsabilidades:
+- Carregar dados mock de preços de GPU de provedores de nuvem
+- Realizar buscas textuais simples nos dados
+- Retornar resultados formatados em JSON
 """
 import json
-import random
-from typing import Dict, List, Any
 from loguru import logger
 
 
 class MockSearchTool:
-    """Simulated search tool with predefined cloud pricing data."""
+    """
+    Ferramenta de busca simulada que representa uma "API de busca local".
+
+    Esta classe simula como seria buscar dados em uma API externa ou banco de dados.
+    No cenário real, isso seria substituído por chamadas reais para APIs de preços.
+
+    Atributos:
+        data_file: Caminho para o arquivo JSON com dados mock
+        data: Dados carregados em memória
+    """
 
     def __init__(self, data_file: str = "data/pricing_data.json"):
-        self.data_file = data_file
-        self._load_mock_data()
-
-    def _load_mock_data(self):
-        """Load mock pricing data."""
-        try:
-            with open(self.data_file, 'r') as f:
-                self.pricing_data = json.load(f)
-        except FileNotFoundError:
-            # Create default mock data if file doesn't exist
-            self.pricing_data = self._create_default_data()
-
-    def _create_default_data(self) -> Dict[str, Any]:
-        """Create default mock pricing data."""
-        return {
-            "cloud_providers": {
-                "AWS": {
-                    "gpus": {
-                        "p3.2xlarge": {
-                            "name": "P3.2xlarge",
-                            "gpu_type": "V100",
-                            "gpu_count": 1,
-                            "vcpus": 8,
-                            "memory_gb": 61,
-                            "price_per_hour": 3.06,
-                            "region": "us-east-1"
-                        },
-                        "p3.8xlarge": {
-                            "name": "P3.8xlarge",
-                            "gpu_type": "V100",
-                            "gpu_count": 4,
-                            "vcpus": 32,
-                            "memory_gb": 244,
-                            "price_per_hour": 12.24,
-                            "region": "us-east-1"
-                        },
-                        "p3.16xlarge": {
-                            "name": "P3.16xlarge",
-                            "gpu_type": "V100",
-                            "gpu_count": 8,
-                            "vcpus": 64,
-                            "memory_gb": 488,
-                            "price_per_hour": 24.48,
-                            "region": "us-east-1"
-                        }
-                    }
-                },
-                "Azure": {
-                    "gpus": {
-                        "NC6": {
-                            "name": "NC6",
-                            "gpu_type": "K80",
-                            "gpu_count": 1,
-                            "vcpus": 6,
-                            "memory_gb": 56,
-                            "price_per_hour": 0.90,
-                            "region": "East US"
-                        },
-                        "NC12": {
-                            "name": "NC12",
-                            "gpu_type": "K80",
-                            "gpu_count": 2,
-                            "vcpus": 12,
-                            "memory_gb": 112,
-                            "price_per_hour": 1.80,
-                            "region": "East US"
-                        },
-                        "NC24": {
-                            "name": "NC24",
-                            "gpu_type": "K80",
-                            "gpu_count": 4,
-                            "vcpus": 24,
-                            "memory_gb": 224,
-                            "price_per_hour": 3.60,
-                            "region": "East US"
-                        }
-                    }
-                },
-                "GCP": {
-                    "gpus": {
-                        "n1-standard-8": {
-                            "name": "n1-standard-8 with Tesla K80",
-                            "gpu_type": "K80",
-                            "gpu_count": 1,
-                            "vcpus": 8,
-                            "memory_gb": 30,
-                            "price_per_hour": 0.70,
-                            "region": "us-central1"
-                        },
-                        "n1-standard-16": {
-                            "name": "n1-standard-16 with Tesla K80",
-                            "gpu_type": "K80",
-                            "gpu_count": 2,
-                            "vcpus": 16,
-                            "memory_gb": 60,
-                            "price_per_hour": 1.40,
-                            "region": "us-central1"
-                        },
-                        "n1-standard-32": {
-                            "name": "n1-standard-32 with Tesla K80",
-                            "gpu_type": "K80",
-                            "gpu_count": 4,
-                            "vcpus": 32,
-                            "memory_gb": 120,
-                            "price_per_hour": 2.80,
-                            "region": "us-central1"
-                        }
-                    }
-                }
-            }
-        }
-
-    def search_gpu_pricing(self, provider: str = None, gpu_type: str = None,
-                          min_gpu_count: int = None, max_price: float = None) -> List[Dict[str, Any]]:
         """
-        Search for GPU pricing information.
+        Inicializa a ferramenta de busca.
 
         Args:
-            provider: Filter by cloud provider (AWS, Azure, GCP)
-            gpu_type: Filter by GPU type (V100, K80, etc.)
-            min_gpu_count: Minimum number of GPUs
-            max_price: Maximum price per hour
+            data_file: Caminho para arquivo JSON com dados de preços
+        """
+        self.data_file = data_file
+        # Carrega dados uma vez na inicialização para performance
+        self.data = self._load_data()
+
+    def _load_data(self):
+        """
+        Carrega dados mock do arquivo JSON.
+
+        Este método representa como seria conectar com uma fonte de dados real.
+        Em produção, isso seria uma chamada para API ou banco de dados.
 
         Returns:
-            List of matching GPU instances
+            dict: Dados carregados ou dict vazio se arquivo não existir
         """
-        logger.info(f"Searching GPU pricing - Provider: {provider}, GPU Type: {gpu_type}, "
-                   f"Min GPUs: {min_gpu_count}, Max Price: {max_price}")
+        try:
+            # Abre arquivo com encoding UTF-8 para suportar caracteres especiais
+            with open(self.data_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            # Log de warning se arquivo não existir (desenvolvimento)
+            logger.warning(f"Arquivo {self.data_file} não encontrado, usando dados vazios")
+            return {}
 
+    def search_gpu_pricing(self, query: str) -> str:
+        """
+        Método principal: realiza busca por preços de GPU.
+
+        Esta é a função que o agente IA chama quando precisa buscar dados de preços.
+        Representa uma "ferramenta externa" que o LLM pode invocar.
+
+        Algoritmo de busca:
+        1. Converte query para minúsculas
+        2. Itera sobre todos os dados (provedores -> categorias -> itens)
+        3. Verifica se query aparece em qualquer campo do item
+        4. Retorna até 5 resultados mais relevantes
+
+        Args:
+            query: String de busca (ex: "AWS V100", "GPU pricing", etc.)
+
+        Returns:
+            str: JSON com resultados da busca ou mensagem de erro
+        """
+        logger.info(f"Iniciando busca por: '{query}'")
         results = []
 
-        providers_to_search = [provider] if provider else self.pricing_data["cloud_providers"].keys()
-
-        for prov in providers_to_search:
-            if prov not in self.pricing_data["cloud_providers"]:
-                continue
-
-            for instance_type, instance_data in self.pricing_data["cloud_providers"][prov]["gpus"].items():
-                # Apply filters
-                if gpu_type and instance_data["gpu_type"] != gpu_type:
-                    continue
-                if min_gpu_count and instance_data["gpu_count"] < min_gpu_count:
-                    continue
-                if max_price and instance_data["price_per_hour"] > max_price:
-                    continue
-
-                results.append({
-                    "provider": prov,
-                    "instance_type": instance_type,
-                    **instance_data
-                })
-
-        # Add some randomness to simulate real search variability
-        random.shuffle(results)
-
-        logger.info(f"Found {len(results)} matching GPU instances")
-        return results
-
-    def search_general(self, query: str) -> Dict[str, Any]:
-        """
-        General search function that can handle various queries.
-
-        Args:
-            query: Search query string
-
-        Returns:
-            Search results
-        """
-        logger.info(f"Performing general search for: {query}")
-
-        # Simulate search latency
-        import time
-        time.sleep(random.uniform(0.1, 0.5))
-
+        # Normaliza query para busca case-insensitive
         query_lower = query.lower()
 
-        if "gpu" in query_lower and ("price" in query_lower or "cost" in query_lower):
-            return {
-                "type": "gpu_pricing",
-                "results": self.search_gpu_pricing(),
+        # Itera sobre estrutura de dados: provider -> category -> items
+        # Exemplo: AWS -> GPU_Instances -> [lista de instâncias]
+        for provider, categories in self.data.items():
+            for category, items in categories.items():
+                for item in items:
+                    # Converte item completo para string e busca
+                    # Isso permite buscar por qualquer campo (nome, tipo, preço, etc.)
+                    item_str = json.dumps(item, ensure_ascii=False).lower()
+                    if query_lower in item_str:
+                        # Adiciona resultado com contexto
+                        results.append({
+                            "provider": provider,      # AWS, Azure, GCP
+                            "category": category,      # GPU_Instances, etc.
+                            "data": item              # Dados completos da instância
+                        })
+
+        # Verifica se encontrou resultados
+        if not results:
+            logger.info(f"Nenhum resultado encontrado para: {query}")
+            return json.dumps({
+                "mensagem": f"Nenhum resultado encontrado para: {query}",
                 "query": query
-            }
-        elif "cloud" in query_lower and "provider" in query_lower:
-            return {
-                "type": "cloud_providers",
-                "results": list(self.pricing_data["cloud_providers"].keys()),
-                "query": query
-            }
-        else:
-            return {
-                "type": "general",
-                "results": f"Mock search results for: {query}",
-                "query": query
-            }
+            })
+
+        # Limita a 5 resultados para não sobrecarregar o LLM
+        limited_results = results[:5]
+        logger.info(f"Encontrados {len(limited_results)} resultados para: {query}")
+
+        # Retorna JSON formatado para o agente
+        return json.dumps(limited_results, ensure_ascii=False, indent=2)

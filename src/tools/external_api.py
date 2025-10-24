@@ -1,236 +1,172 @@
 """
-Mock external API tool that simulates an external service for additional data.
+Ferramenta de API Externa Simulada (ExternalAPITool)
+
+Esta ferramenta representa a terceira ferramenta do agente: uma "API externa de mercado".
+Simula chamadas para serviços externos que fornecem dados de tendências e comparações.
+
+Responsabilidades:
+- Simular chamadas para APIs de comparação de preços
+- Fornecer dados de tendências de mercado
+- Calcular economias potenciais entre provedores
+- Retornar análises de mercado
 """
-import requests
 import json
-import time
-import random
-from typing import Dict, Any, Optional
 from loguru import logger
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-
-
-class PriceComparisonRequest(BaseModel):
-    provider1: str
-    provider2: str
-    instance_type: str
-
-
-class MockExternalAPIServer:
-    """Mock external API server for demonstration."""
-
-    def __init__(self):
-        self.app = FastAPI(title="Mock External API", version="1.0.0")
-        self._setup_routes()
-
-    def _setup_routes(self):
-        @self.app.get("/health")
-        async def health_check():
-            return {"status": "healthy", "service": "mock_external_api"}
-
-        @self.app.get("/providers")
-        async def get_providers():
-            """Get list of supported cloud providers."""
-            return {
-                "providers": ["AWS", "Azure", "GCP", "IBM", "Oracle"],
-                "status": "success"
-            }
-
-        @self.app.post("/compare-prices")
-        async def compare_prices(request: PriceComparisonRequest):
-            """Compare prices between two providers for a specific instance type."""
-            # Simulate processing time
-            time.sleep(random.uniform(0.2, 0.8))
-
-            provider1 = request.provider1.upper()
-            provider2 = request.provider2.upper()
-            instance_type = request.instance_type
-
-            # Mock comparison data
-            mock_comparisons = {
-                ("AWS", "AZURE"): {
-                    "p3.2xlarge": {
-                        "aws_price": 3.06,
-                        "azure_price": 2.80,
-                        "recommendation": "Azure",
-                        "savings_percent": 8.5
-                    },
-                    "p3.8xlarge": {
-                        "aws_price": 12.24,
-                        "azure_price": 11.20,
-                        "recommendation": "Azure",
-                        "savings_percent": 8.5
-                    }
-                },
-                ("AWS", "GCP"): {
-                    "p3.2xlarge": {
-                        "aws_price": 3.06,
-                        "gcp_price": 2.90,
-                        "recommendation": "GCP",
-                        "savings_percent": 5.2
-                    }
-                },
-                ("AZURE", "GCP"): {
-                    "NC6": {
-                        "azure_price": 0.90,
-                        "gcp_price": 0.70,
-                        "recommendation": "GCP",
-                        "savings_percent": 22.2
-                    }
-                }
-            }
-
-            key = (provider1, provider2)
-            reverse_key = (provider2, provider1)
-
-            if key in mock_comparisons and instance_type in mock_comparisons[key]:
-                data = mock_comparisons[key][instance_type]
-                return {
-                    "comparison": {
-                        "instance_type": instance_type,
-                        f"{provider1.lower()}_price": data[f"{provider1.lower()}_price"],
-                        f"{provider2.lower()}_price": data[f"{provider2.lower()}_price"],
-                        "recommendation": data["recommendation"],
-                        "savings_percent": data["savings_percent"]
-                    },
-                    "status": "success"
-                }
-            elif reverse_key in mock_comparisons and instance_type in mock_comparisons[reverse_key]:
-                data = mock_comparisons[reverse_key][instance_type]
-                return {
-                    "comparison": {
-                        "instance_type": instance_type,
-                        f"{provider1.lower()}_price": data[f"{reverse_key[0].lower()}_price"],
-                        f"{provider2.lower()}_price": data[f"{reverse_key[1].lower()}_price"],
-                        "recommendation": data["recommendation"],
-                        "savings_percent": data["savings_percent"]
-                    },
-                    "status": "success"
-                }
-            else:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"No comparison data available for {provider1} vs {provider2} - {instance_type}"
-                )
-
-        @self.app.get("/market-trends")
-        async def get_market_trends(provider: Optional[str] = None):
-            """Get market trends for cloud pricing."""
-            trends = {
-                "overall_trend": "prices_decreasing",
-                "average_change_percent": -5.2,
-                "providers": {
-                    "AWS": {"trend": "stable", "change_percent": -2.1},
-                    "Azure": {"trend": "decreasing", "change_percent": -8.5},
-                    "GCP": {"trend": "decreasing", "change_percent": -6.3}
-                }
-            }
-
-            if provider:
-                provider = provider.upper()
-                if provider in trends["providers"]:
-                    return {
-                        "provider": provider,
-                        **trends["providers"][provider],
-                        "status": "success"
-                    }
-                else:
-                    raise HTTPException(status_code=404, detail=f"Provider {provider} not found")
-
-            return {"market_trends": trends, "status": "success"}
 
 
 class ExternalAPITool:
-    """Client tool for interacting with the mock external API."""
+    """
+    Ferramenta que simula uma API externa de análise de mercado.
 
-    def __init__(self, base_url: str = "http://localhost:8001", api_key: str = "demo_key"):
-        self.base_url = base_url.rstrip("/")
-        self.api_key = api_key
-        self.session = requests.Session()
-        self.session.headers.update({
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        })
+    Esta classe representa como seria integrar com um serviço real de análise
+    de preços de nuvem, tendências de mercado, e comparações competitivas.
 
-    def get_providers(self) -> Dict[str, Any]:
-        """Get list of supported providers from external API."""
-        logger.info("Fetching providers from external API")
+    Em produção, isso seria substituído por chamadas reais para:
+    - APIs de provedores de nuvem
+    - Serviços de análise de mercado
+    - Ferramentas de comparação de custos
 
-        try:
-            response = self.session.get(f"{self.base_url}/providers")
-            response.raise_for_status()
-            result = response.json()
-            logger.info(f"Retrieved {len(result.get('providers', []))} providers")
-            return result
-        except requests.RequestException as e:
-            logger.error(f"Failed to fetch providers: {e}")
-            return {"providers": ["AWS", "Azure", "GCP"], "status": "fallback"}
+    Atributos:
+        base_url: URL base da API simulada
+        api_key: Chave de autenticação simulada
+    """
 
-    def compare_prices(self, provider1: str, provider2: str, instance_type: str) -> Dict[str, Any]:
+    def __init__(self, base_url: str = "http://localhost:8001", api_key: str = "demo"):
         """
-        Compare prices between two providers for a specific instance type.
+        Inicializa a ferramenta de API externa.
 
         Args:
-            provider1: First cloud provider
-            provider2: Second cloud provider
-            instance_type: Instance type to compare
+            base_url: URL base da API (simulada)
+            api_key: Chave de API para autenticação (simulada)
+        """
+        self.base_url = base_url
+        self.api_key = api_key
+
+    def compare_prices(self, provider1: str, provider2: str, gpu_type: str = "") -> str:
+        """
+        Método principal: compara preços entre dois provedores de nuvem.
+
+        Esta é a função que o agente IA chama quando precisa comparar
+        custos entre diferentes provedores para o mesmo tipo de GPU.
+
+        Lógica de comparação:
+        1. Busca dados de preços simulados para ambos os provedores
+        2. Calcula diferenças de preço
+        3. Determina qual opção é mais econômica
+        4. Calcula percentual de economia
+
+        Args:
+            provider1: Primeiro provedor (AWS, Azure, GCP)
+            provider2: Segundo provedor para comparação
+            gpu_type: Tipo de GPU para comparar (V100, K80, etc.)
 
         Returns:
-            Comparison results
+            str: JSON com resultados da comparação ou mensagem de erro
         """
-        logger.info(f"Comparing prices: {provider1} vs {provider2} for {instance_type}")
+        logger.info(f"Iniciando comparação: {provider1} vs {provider2} para GPU {gpu_type}")
 
-        payload = {
-            "provider1": provider1,
-            "provider2": provider2,
-            "instance_type": instance_type
+        # Base de dados simulada de comparações
+        # Em produção, isso viria de uma API real de análise de mercado
+        comparisons = {
+            ("AWS", "Azure"): {
+                "V100": {"aws_price": 3.06, "azure_price": 2.80, "recommendation": "Azure", "savings": "8.5%"},
+                "K80": {"aws_price": 0.90, "azure_price": 0.85, "recommendation": "Azure", "savings": "5.6%"}
+            },
+            ("AWS", "GCP"): {
+                "V100": {"aws_price": 3.06, "gcp_price": 2.90, "recommendation": "GCP", "savings": "5.2%"},
+                "K80": {"aws_price": 0.90, "gcp_price": 0.70, "recommendation": "GCP", "savings": "22.2%"}
+            },
+            ("Azure", "GCP"): {
+                "K80": {"azure_price": 0.85, "gcp_price": 0.70, "recommendation": "GCP", "savings": "17.6%"}
+            }
         }
 
-        try:
-            response = self.session.post(f"{self.base_url}/compare-prices", json=payload)
-            response.raise_for_status()
-            result = response.json()
-            logger.info(f"Price comparison successful: {result.get('comparison', {}).get('recommendation', 'N/A')}")
-            return result
-        except requests.RequestException as e:
-            logger.error(f"Failed to compare prices: {e}")
-            return {
-                "comparison": {
-                    "error": f"API request failed: {str(e)}",
-                    "provider1": provider1,
-                    "provider2": provider2,
-                    "instance_type": instance_type
-                },
-                "status": "error"
+        # Tenta encontrar comparação direta
+        key = (provider1, provider2)
+        reverse_key = (provider2, provider1)
+
+        if key in comparisons and gpu_type in comparisons[key]:
+            # Comparação direta encontrada
+            data = comparisons[key][gpu_type]
+            result = {
+                "comparacao": {
+                    f"{provider1}_preco": data[f"{provider1.lower()}_price"],
+                    f"{provider2}_preco": data[f"{provider2.lower()}_price"],
+                    "recomendacao": data["recommendation"],
+                    "economia": data["savings"]
+                }
+            }
+            logger.info(f"Comparação encontrada: {data['recommendation']} recomendado com {data['savings']} de economia")
+
+        elif reverse_key in comparisons and gpu_type in comparisons[reverse_key]:
+            # Comparação reversa encontrada (ex: Azure vs AWS quando pediu AWS vs Azure)
+            data = comparisons[reverse_key][gpu_type]
+            result = {
+                "comparacao": {
+                    f"{provider1}_preco": data[f"{provider2.lower()}_price"],  # Inverte os preços
+                    f"{provider2}_preco": data[f"{provider1.lower()}_price"],  # Inverte os preços
+                    "recomendacao": data["recommendation"],
+                    "economia": data["savings"]
+                }
+            }
+            logger.info(f"Comparação reversa encontrada: {data['recommendation']} recomendado")
+
+        else:
+            # Nenhuma comparação disponível
+            logger.info(f"Comparação não disponível: {provider1} vs {provider2} para {gpu_type}")
+            result = {
+                "mensagem": f"Comparação não disponível para {provider1} vs {provider2} com GPU {gpu_type}"
             }
 
-    def get_market_trends(self, provider: Optional[str] = None) -> Dict[str, Any]:
+        # Retorna resultado em JSON para o agente
+        return json.dumps(result, ensure_ascii=False, indent=2)
+
+    def get_market_trends(self, provider: str = "all") -> str:
         """
-        Get market trends data.
+        Método secundário: obtém tendências de mercado.
+
+        Esta função simula uma chamada para um serviço de análise de tendências
+        de mercado, fornecendo insights sobre direção dos preços.
 
         Args:
-            provider: Optional provider filter
+            provider: Provedor específico ou "all" para todos
 
         Returns:
-            Market trends data
+            str: JSON com tendências de mercado
         """
-        logger.info(f"Fetching market trends for provider: {provider}")
+        logger.info(f"Consultando tendências de mercado para: {provider}")
 
-        params = {"provider": provider} if provider else {}
-
-        try:
-            response = self.session.get(f"{self.base_url}/market-trends", params=params)
-            response.raise_for_status()
-            result = response.json()
-            logger.info("Market trends retrieved successfully")
-            return result
-        except requests.RequestException as e:
-            logger.error(f"Failed to fetch market trends: {e}")
-            return {
-                "market_trends": {
-                    "error": f"API request failed: {str(e)}",
-                    "overall_trend": "unknown"
-                },
-                "status": "error"
+        # Dados simulados de tendências de mercado
+        # Em produção, isso viria de análise real de dados históricos
+        trends = {
+            "AWS": {
+                "tendencia": "estavel",
+                "analise": "Demanda alta mantém preços estáveis, boa disponibilidade"
+            },
+            "Azure": {
+                "tendencia": "crescendo",
+                "analise": "Aumento na demanda por workloads de IA, preços em ascensão"
+            },
+            "GCP": {
+                "tendencia": "estavel",
+                "analise": "Preços competitivos, foco em workloads sustentáveis"
             }
+        }
+
+        if provider == "all":
+            # Retorna tendências para todos os provedores
+            result = {"tendencias": trends}
+            logger.info("Tendências de todos os provedores retornadas")
+        elif provider in trends:
+            # Retorna tendência de um provedor específico
+            result = {provider: trends[provider]}
+            logger.info(f"Tendência de {provider} retornada")
+        else:
+            # Provedor não encontrado
+            result = {
+                "mensagem": f"Tendências não disponíveis para o provedor: {provider}"
+            }
+            logger.info(f"Tendência não encontrada para: {provider}")
+
+        # Retorna resultado em JSON para o agente
+        return json.dumps(result, ensure_ascii=False, indent=2)

@@ -1,277 +1,206 @@
-# AI Cloud Pricing Agent
+# Agente IA de Precificação em Nuvem
 
-Um agente de IA autônomo especializado em análise de custos de computação em nuvem, utilizando o framework Agno e ChromaDB para fornecer recomendações inteligentes sobre preços de GPU entre provedores AWS, Azure e GCP.
+## O Que É
 
-## 🚀 Visão Geral
+Um agente de IA autônomo que ajuda usuários a entenderem e compararem preços de GPUs nos principais provedores de nuvem: AWS, Azure e Google Cloud Platform (GCP).
 
-Este projeto implementa um agente de IA complexo que pode:
-- Analisar preços de GPU em múltiplos provedores de nuvem
-- Comparar custos entre diferentes plataformas
-- Fornecer recomendações de otimização de custos
-- Pesquisar em base de conhecimento vetorial
-- Integrar com APIs externas simuladas
+## Como Funciona
 
-## 🏗️ Arquitetura
+O agente usa inteligência artificial para:
+- **Buscar preços** de GPUs em diferentes provedores
+- **Comparar custos** entre plataformas
+- **Dar recomendações** sobre qual opção é mais econômica
+- **Explicar diferenças** técnicas entre instâncias
 
-O sistema é composto por:
+## Ferramentas Usadas
 
-- **Agente Principal**: Implementado com Agno, coordena todas as operações
-- **Ferramentas**:
-  - `MockSearchTool`: Busca simulada de preços (JSON/local)
-  - `VectorStoreTool`: Base vetorial com ChromaDB
-  - `ExternalAPITool`: API externa fictícia para comparações
-- **Interface CLI**: Interface de linha de comando rica
-- **Servidor Mock API**: Simula serviços externos
+1. **Framework Agno** - Para criar o agente inteligente
+2. **ChromaDB** - Base de dados vetorial para conhecimento
+3. **GPT-4 da OpenAI** - Cérebro do agente
+4. **Python** - Linguagem de programação
 
-## 📋 Pré-requisitos
+## Arquitetura Simples
 
-- Python 3.11+
-- Chave API do OpenAI ou Anthropic
-- (Opcional) Docker para execução containerizada
+```
+Usuário → Agente Agno → 3 Ferramentas
+                      ↓
+               Resposta Estruturada
+```
 
-## 🛠️ Instalação
+**As 3 ferramentas:**
+- 🔍 **Busca Local**: Procura preços em dados JSON
+- 🧠 **Base de Conhecimento**: ChromaDB com dicas de otimização
+- 🌐 **API Externa**: Simula comparações de mercado
 
-### Opção 1: Instalação Direta
+## Instalação Rápida
 
-1. **Clone o repositório**:
+1. **Instale Python** (versão 3.11 ou superior)
+
+2. **Clone e instale**:
    ```bash
    git clone <repository-url>
    cd ai-cloud-pricing-agent
-   ```
-
-2. **Crie ambiente virtual**:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   # ou
-   venv\Scripts\activate     # Windows
-   ```
-
-3. **Instale dependências**:
-   ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure variáveis de ambiente**:
+3. **Configure API key**:
    ```bash
-   cp env.example .env
-   # Edite .env com suas chaves API
+   # Crie arquivo .env
+   echo "OPENAI_API_KEY=sua-chave-aqui" > .env
    ```
 
-### Opção 2: Docker
+## Como Executar
 
+### Opção 1: Docker Compose com API FastAPI (Recomendado)
 ```bash
-docker build -t ai-cloud-agent .
-docker run -it --env-file .env ai-cloud-agent
+# Construir e executar a API FastAPI
+docker-compose up --build
+
+# A API ficará disponível em: http://localhost:8000
+# Documentação automática: http://localhost:8000/docs
+
+# Para rebuild quando fizer mudanças
+docker-compose up --build
 ```
 
-## ⚙️ Configuração
-
-### Variáveis de Ambiente (.env)
-
+#### Como usar a API FastAPI:
 ```bash
-# APIs (pelo menos uma é necessária)
-OPENAI_API_KEY=your_openai_key
-ANTHROPIC_API_KEY=your_anthropic_key
+# 1. Verificar se a API está funcionando
+curl http://localhost:8000/health
 
-# Modelo padrão
-DEFAULT_MODEL=gpt-4
+# 2. Ver documentação interativa da API
+# Abra no navegador: http://localhost:8000/docs
 
-# ChromaDB
-CHROMA_DB_PATH=./data/chromadb
+# 3. Fazer uma pergunta (via POST)
+curl -X POST "http://localhost:8000/ask" \
+     -H "Content-Type: application/json" \
+     -d '{"question": "Quanto custa GPU V100 na AWS?"}'
 
-# Logging
-LOG_LEVEL=INFO
-LOG_FILE=logs/agent.log
+# 4. Ou usar o script de teste Python
+python test_docker.py
 
-# API Externa (Mock)
-EXTERNAL_API_BASE_URL=http://localhost:8001
-EXTERNAL_API_KEY=demo_key
+# 5. Ou via linha de comando (exemplo antigo)
+docker-compose run --rm ai-agent python src/main.py "Qual é o preço da GPU V100 na Azure?"
 ```
 
-### Modelos Suportados
+### 🔧 Troubleshooting (Resolução de Problemas)
 
-- **OpenAI**: `gpt-4`, `gpt-3.5-turbo`
-- **Anthropic**: `claude-3-5-sonnet-20241022`, `claude-3-haiku-20240307`
-
-## 🚀 Uso
-
-### 1. Iniciar Servidor Mock API
-
-Em um terminal separado:
+#### Docker não conecta:
 ```bash
-python -m src.main api-server
+# 1. Verificar se Docker Desktop está rodando
+# Abra o Docker Desktop manualmente
+
+# 2. Verificar status do Docker
+docker info
+
+# 3. Reiniciar Docker Desktop se necessário
 ```
 
-### 2. Modo Interativo
-
-```bash
-python -m src.main interactive
+#### Porta 8000 ocupada:
+```yaml
+# Modifique no docker-compose.yml:
+ports:
+  - "8001:8000"  # Muda para porta 8001 local
 ```
 
-Exemplos de consultas:
-- "Monte um relatório que mostre o preço médio de GPUs na AWS, Azure e GCP, e sugira a opção mais barata por hora de uso"
-- "Compare preços de instâncias P3 da AWS com equivalentes no Azure"
-- "Quais estratégias de otimização de custos você recomenda para workloads de ML?"
+#### Erro de permissão nos logs:
+- Os diretórios `logs/` e `data/chromadb/` são criados automaticamente no container
+- Não há necessidade de criar manualmente
 
-### 3. Consulta Única
+#### API retorna erro 503:
+- Aguardar alguns segundos para o agente inicializar completamente
+- Verificar logs: `docker-compose logs ai-agent`
 
+### Opção 2: Docker Direto
 ```bash
-python -m src.main query "Qual é o preço da instância p3.2xlarge na AWS?"
+# Construir a imagem
+docker build -t ai-agent .
+
+# Executar com arquivo .env
+docker run --rm --env-file test.env ai-agent python src/main.py "Quanto custa GPU na AWS?"
 ```
 
-### 4. Salvar Resultado
-
+### Opção 3: Localmente
 ```bash
-python -m src.main query "Compare GPUs V100 entre provedores" --output resultado.txt
+# Instalar dependências
+pip install -r requirements.txt
+
+# Executar
+python src/main.py "Qual é o preço da GPU V100 na AWS?"
 ```
 
-### 5. Verificar Configuração
+## Como Usar
 
+### Exemplo Básico
 ```bash
-python -m src.main config
+python src/main.py "Quanto custa uma GPU V100 na AWS?"
 ```
 
-### 6. Ver Estatísticas
+### Exemplos de Perguntas
+- "Compare preços de GPU entre AWS e Azure"
+- "Qual é a opção mais barata para machine learning?"
+- "Explique as diferenças entre instâncias P3 e NC6"
 
-```bash
-python -m src.main stats
+## Arquivos Importantes
+
+- `src/main.py` - Ponto de entrada
+- `src/agents/cloud_pricing_agent.py` - O agente principal
+- `src/tools/` - As 3 ferramentas
+- `data/pricing_data.json` - Dados de preços mock
+- `docs/architecture.md` - Documentação técnica completa
+
+## Resultado de Teste
+
+Exemplo de saída do agente:
+
+```
+==================================================
+RESPOSTA DO AGENTE:
+==================================================
+Baseado nos dados disponíveis, uma GPU V100 na AWS custa $3.06 por hora na instância P3.2xlarge.
+
+Para comparar com Azure, uma instância similar (NC6s_v3) custa $2.80 por hora, representando uma economia de 8.5%.
+
+Recomendação: Considere Azure para workloads que não exigem a performance máxima da AWS.
+==================================================
 ```
 
-## 🔧 Desenvolvimento
+## Para Desenvolvedores
 
 ### Estrutura do Projeto
-
 ```
 src/
+├── main.py                 # CLI principal
 ├── agents/
-│   ├── cloud_pricing_agent.py  # Agente principal
-│   └── __init__.py
-├── tools/
-│   ├── search_tool.py          # Busca simulada
-│   ├── vector_store.py         # ChromaDB
-│   ├── external_api.py         # API mock
-│   └── __init__.py
-├── utils/
-│   ├── config.py              # Configurações
-│   ├── logging_config.py      # Logging
-│   └── __init__.py
-├── main.py                    # CLI principal
-└── __init__.py
-
-data/
-├── pricing_data.json          # Dados mock
-└── chromadb/                  # Base vetorial
-
-docs/
-└── architecture.md            # Documentação técnica
-
-tests/
-└── (testes futuros)
+│   └── cloud_pricing_agent.py  # Agente Agno
+└── tools/                  # As 3 ferramentas
+    ├── search_tool.py      # Busca local
+    ├── vector_store.py     # ChromaDB
+    └── external_api.py     # API externa mock
 ```
 
-### Adicionando Novas Ferramentas
+### Principais Componentes
 
-1. Crie uma nova classe em `src/tools/`
-2. Implemente os métodos necessários
-3. Registre no agente em `cloud_pricing_agent.py`
-4. Atualize o `__init__.py`
-
-## 🧪 Testes
-
-```bash
-# Executar testes (quando implementados)
-pytest tests/
-
-# Teste manual das ferramentas
-python -c "from src.tools import MockSearchTool; tool = MockSearchTool(); print(tool.search_gpu_pricing())"
+**Agente Principal:**
+```python
+class CloudPricingAgent:
+    def __init__(self):
+        self.search_tool = MockSearchTool()
+        self.vector_store = VectorStoreTool()
+        self.external_api = ExternalAPITool()
+        self.agent = self._create_agent()
 ```
 
-## 📊 Decisões Técnicas
+**Ferramentas Disponíveis:**
+- `search_gpu_pricing()` - Busca preços
+- `compare_cloud_prices()` - Compara provedores
+- `get_market_trends()` - Tendências de mercado
+- `search_knowledge_base()` - Dicas de otimização
 
-### Framework Agno
-- **Razão**: Framework moderno para agentes de IA, suporta múltiplos modelos e ferramentas
-- **Alternativas consideradas**: LangChain, LlamaIndex
-- **Vantagem**: API limpa, boa integração com ferramentas customizadas
+## Próximos Passos
 
-### ChromaDB para Vetorial
-- **Razão**: Base vetorial leve, open-source, fácil integração
-- **Alternativas**: FAISS, Pinecone, Weaviate
-- **Vantagem**: Não requer API externa, persistência local
-
-### Mock APIs
-- **Razão**: Simula cenário real sem dependências externas
-- **Implementação**: FastAPI para servidor mock, requests para cliente
-- **Benefício**: Desenvolvimento independente, testes controlados
-
-### Logging Estruturado
-- **Framework**: Loguru para logging moderno
-- **Níveis**: INFO para operações normais, ERROR para problemas
-- **Formato**: Estruturado com timestamps, níveis e contexto
-
-## 🔒 Segurança
-
-### Considerações Implementadas
-- Validação de configuração antes da inicialização
-- Logs não expõem chaves API
-- Isolamento de ferramentas via funções wrapper
-- Tratamento de erros graceful
-
-### Riscos Mitigados
-- **Prompt Injection**: Validação de inputs no agente
-- **Data Leakage**: Logs sanitizados, dados mock
-- **API Abuse**: Rate limiting nas ferramentas simuladas
-- **Dependências**: Versões fixadas no requirements.txt
-
-## 📈 Performance
-
-### Otimizações
-- **Cache vetorial**: ChromaDB mantém índices em memória
-- **Lazy loading**: Ferramentas inicializadas sob demanda
-- **Async operations**: APIs simuladas com delays realistas
-- **Memory management**: Limitação de resultados de busca
-
-### Métricas Monitoradas
-- Tempo de resposta por consulta
-- Taxa de sucesso das ferramentas
-- Uso de tokens (via logging do Agno)
-- Latência da API externa
-
-## 🔄 Escalabilidade
-
-Ver documento completo em `docs/architecture.md` para estratégias detalhadas de escalabilidade.
-
-### Principais Estratégias
-- **Horizontal scaling**: Múltiplas instâncias do agente
-- **Cache distribuído**: Redis para resultados frequentes
-- **Database sharding**: Para grande volume de dados vetoriais
-- **API Gateway**: Para rate limiting e load balancing
-
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-ferramenta`)
-3. Commit suas mudanças (`git commit -am 'Adiciona nova ferramenta'`)
-4. Push para a branch (`git push origin feature/nova-ferramenta`)
-5. Abra um Pull Request
-
-## 📝 Licença
-
-Este projeto é distribuído sob a licença MIT. Ver arquivo LICENSE para detalhes.
-
-## 🙏 Agradecimentos
-
-- Agno framework por facilitar a criação de agentes
-- ChromaDB pela base vetorial eficiente
-- Comunidade open-source pelas bibliotecas utilizadas
-
-## 📞 Suporte
-
-Para questões ou problemas:
-1. Verifique os logs em `logs/agent.log`
-2. Valide sua configuração com `python -m src.main config`
-3. Abra uma issue no repositório
-
----
-
-**Nota**: Este é um projeto de demonstração técnica. Os preços mostrados são simulados e não refletem valores reais de mercado.
+- [ ] Integrar com APIs reais dos provedores
+- [ ] Adicionar mais provedores de nuvem
+- [ ] Implementar cache inteligente
+- [ ] Criar interface web
+- [ ] Adicionar testes automatizados completos

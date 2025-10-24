@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  ai-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cloud-pricing-agent
+    ports:
+      - "8000:8000"  # Para FastAPI (futuro)
+      - "8001:8001"  # Para mock API externa
+    volumes:
+      # Persistir dados do ChromaDB
+      - chromadb_data:/app/data/chromadb
+      # Persistir logs
+      - logs_data:/app/logs
+      # Montar arquivo .env para configuração
+      - ./test.env:/app/.env:ro
+    # Comando removido - usa CMD padrão do Dockerfile (API FastAPI)
+    environment:
+      # Variáveis de ambiente podem ser sobrescritas aqui se necessário
+      - CHROMA_DB_PATH=./data/chromadb
+      - EXTERNAL_API_URL=http://localhost:8001
+    env_file:
+      - test.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - agent-network
+
+  # Serviço opcional para mock API externa (futuro)
+  # mock-api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: mock-external-api
+  #   ports:
+  #     - "8001:8001"
+  #   command: ["python", "-c", "print('Mock API service - implement FastAPI server here')"]
+  #   networks:
+  #     - agent-network
+
+volumes:
+  chromadb_data:
+    driver: local
+  logs_data:
+    driver: local
+
+networks:
+  agent-network:
+    driver: bridge
