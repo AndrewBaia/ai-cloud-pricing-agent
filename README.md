@@ -114,10 +114,10 @@ ports:
 ### Opção 2: Docker Direto
 ```bash
 # Construir a imagem
-docker build -t ai-agent .
+docker build -t cloud-pricing-agent .
 
 # Executar com arquivo .env
-docker run --rm --env-file test.env ai-agent python src/main.py "Quanto custa GPU na AWS?"
+docker run --rm --env-file test.env cloud-pricing-agent python src/main.py "Quanto custa GPU na AWS?"
 ```
 
 ### Opção 3: Localmente

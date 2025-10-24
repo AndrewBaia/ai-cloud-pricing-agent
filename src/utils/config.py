@@ -4,8 +4,8 @@ Configuração simples para o agente IA.
 import os
 from dotenv import load_dotenv
 
-# Carrega variáveis de ambiente
-load_dotenv()
+# Carrega variáveis de ambiente do arquivo .env no diretório raiz
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
 class Config:
     """Configuração básica da aplicação."""
